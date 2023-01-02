@@ -1,0 +1,75 @@
+#include <ThingSpeak.h>                             // add librery
+#include <ESP8266WiFi.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+WiFiClient  client;
+
+unsigned long counterChannelNumber = 1101118;                 // Channel ID
+const char * myCounterReadAPIKey = "MG21EHEATE4WPEV0";        // Read API Key
+const int FieldNumber1 = 1;                                   // The field you wish to read
+String presentStr,previousStr = " ";
+String line1, line2;
+
+void setup()
+{
+  Serial.begin(115200);
+  
+ lcd.begin(16,2);     // The begin call takes the width and height. This
+ lcd.init();          // Should match the number provided to the constructor.
+ lcd.backlight();     // Turn on the backlight.
+ lcd.setCursor(0, 0); // Move the cursor characters to the right and
+                      // zero characters down (line 1).
+ lcd.print("Embedded");  // Print HELLO to the screen, starting at 0,0.
+
+  
+ lcd.setCursor(0, 1);    // Move the cursor to the next line and print
+ lcd.print("Gate");     // WORLD.  
+
+ delay(2000);
+ 
+  Serial.println();
+  WiFi.begin("POCO", "9004652173");                 // write wifi name & password           
+  Serial.print("Connecting");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println();
+  Serial.print("Connected, IP address: ");
+  Serial.println(WiFi.localIP());
+  ThingSpeak.begin(client);
+  
+}
+
+void loop() 
+{
+ presentStr = ThingSpeak.readStringField(counterChannelNumber, FieldNumber1, myCounterReadAPIKey);
+ if(presentStr != previousStr)
+ {
+  if(presentStr.length() > 16)
+  {
+    line1 = presentStr.substring(0, 16);
+    line2 = presentStr.substring(16, 32);
+    lcd.clear();
+    
+    lcd.setCursor(0, 0);
+    lcd.print(line1);
+    Serial.println(line1);
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+    Serial.println(line2);
+    previousStr = presentStr;
+  }
+  else
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(presentStr);
+    Serial.println(presentStr);
+    previousStr = presentStr;
+  }
+ }
+}
